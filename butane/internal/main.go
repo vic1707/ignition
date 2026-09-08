@@ -61,8 +61,8 @@ func main() {
 	pflag.BoolVarP(&strict, "strict", "s", false, "fail on any warning")
 	pflag.BoolVarP(&options.Pretty, "pretty", "p", false, "output formatted json")
 	pflag.BoolVarP(&options.Raw, "raw", "r", false, "never wrap in a MachineConfig; force Ignition output")
-	pflag.BoolVarP(&baseutil.EnableGomplate, "enable-gomplate", "", false, "Enable gomplate evaluation")
-	pflag.StringVar(&baseutil.GomplateConfigPath, "gomplate-config", baseutil.GomplateConfigPath, "path to the gomplate configuration file")
+	pflag.BoolVarP(&enableGomplate, "enable-gomplate", "", false, "Enable gomplate evaluation")
+	pflag.StringVar(&gomplateConfigPath, "gomplate-config", gomplateConfigPath, "path to the gomplate configuration file")
 	pflag.BoolVar(&rawErrors, "raw-errors", false, "show raw errors, rather than pretty printing them")
 	pflag.StringVar(&colorFlag, "color", "auto", `control color output: "auto", "always", or "never"`)
 	pflag.Lookup("color").NoOptDefVal = "always"
@@ -113,13 +113,14 @@ func main() {
 	}
 
 	if pflag.CommandLine.Changed("gomplate-config") {
-		baseutil.EnableGomplate = true
+		enableGomplate = true
 	}
-	if baseutil.EnableGomplate {
-		err := baseutil.InitGomplateRenderer()
+	if enableGomplate {
+		err := initGomplateRenderer()
 		if err != nil {
 			fail("failed to initialize gomplate: %v\n", err)
 		}
+		baseutil.SetLocalFileReader(gomplateReadLocalFile)
 	}
 
 	infile := os.Stdin
@@ -134,7 +135,7 @@ func main() {
 		filename = input
 	}
 
-	dataIn, err := baseutil.GomplateReadLocalFile(infile)
+	dataIn, err := gomplateReadFile(infile)
 	if err != nil {
 		fail("failed to read %s: %v\n", infile.Name(), err)
 	}
