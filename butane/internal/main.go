@@ -17,6 +17,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/spf13/pflag"
 
@@ -51,6 +52,7 @@ func main() {
 		rawErrors   bool
 		colorize    bool
 		processor   string
+		extensions  string
 	)
 	options := common.TranslateBytesOptions{}
 	pflag.BoolVarP(&helpFlag, "help", "h", false, "show usage and exit")
@@ -73,7 +75,8 @@ func main() {
 	pflag.Lookup("input").Hidden = true
 	pflag.StringVarP(&output, "output", "o", "", "write to output file instead of stdout")
 	pflag.StringVarP(&options.FilesDir, "files-dir", "d", "", "allow embedding local files from this directory")
-	pflag.StringVar(&processor, "file-processor", "", "process every input file through this external command")
+	pflag.StringVar(&processor, "file-processor", "", "process the root input, local references, and regular tree files through this external command")
+	pflag.StringVar(&extensions, "file-processor-allowed-ext", "", "comma-separated filename suffixes to process (e.g. bu,txt,templated.yml); * processes all named files, stdin is always processed")
 
 	pflag.Usage = func() {
 		_, _ = fmt.Fprintf(pflag.CommandLine.Output(), "Usage: %s [options] [input-file]\n", os.Args[0])
@@ -111,8 +114,24 @@ func main() {
 		fmt.Println(version.String)
 		os.Exit(0)
 	}
-	if processor != "" {
+	if pflag.CommandLine.Changed("file-processor-allowed-ext") && processor == "" {
+		fail("--file-processor-allowed-ext requires --file-processor\n")
+	}
+	var allowedExtensions []string
+	if extensions != "" {
+		allowedExtensions = strings.Split(extensions, ",")
+		for i, ext := range allowedExtensions {
+			allowedExtensions[i] = strings.TrimPrefix(strings.TrimSpace(ext), ".")
+			if allowedExtensions[i] == "" {
+				fail("empty extension in --file-processor-allowed-ext\n")
+			}
+		}
+	}
+	if processor != "" && len(allowedExtensions) > 0 {
 		options.LocalFileReader = func(path string) ([]byte, error) {
+			if !matchesExtension(path, allowedExtensions) {
+				return os.ReadFile(path)
+			}
 			return processLocalFile(path, processor)
 		}
 	}
@@ -129,7 +148,11 @@ func main() {
 		filename = input
 	}
 
-	dataIn, err := processFile(infile, processor)
+	inputProcessor := processor
+	if input != "" && !matchesExtension(input, allowedExtensions) {
+		inputProcessor = ""
+	}
+	dataIn, err := processFile(infile, inputProcessor)
 	if err != nil {
 		fail("failed to read %s: %v\n", infile.Name(), err)
 	}
