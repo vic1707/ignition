@@ -15,6 +15,7 @@
 package v0_5
 
 import (
+	"fmt"
 	"strings"
 
 	baseutil "github.com/coreos/ignition/v2/butane/base/util"
@@ -41,9 +42,25 @@ func (rs Resource) Validate(c path.ContextPath) (r report.Report) {
 		sources++
 		field = "source"
 	}
+	if rs.InlineButane != nil {
+		sources++
+		field = "inline_butane"
+	}
+	if rs.LocalButane != nil {
+		sources++
+		field = "local_butane"
+	}
 	if sources > 1 {
 		r.AddOnError(c.Append(field), common.ErrTooManyResourceSources)
 		return
+	}
+	if rs.LocalButane != nil {
+		if rs.LocalButane.Path == nil {
+			r.AddOnError(c.Append("local_butane", "path"), fmt.Errorf("path is required"))
+		}
+		if rs.LocalButane.FilesDir != nil && *rs.LocalButane.FilesDir == "" {
+			r.AddOnError(c.Append("local_butane", "files_dir"), fmt.Errorf("files_dir cannot be empty"))
+		}
 	}
 	if strings.HasPrefix(c.String(), "$.ignition.config") {
 		if field == "inline" {

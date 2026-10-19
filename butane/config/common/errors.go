@@ -34,7 +34,7 @@ var (
 	ErrRhcosVariantUnsupported = errors.New("rhcos variant has been removed; use openshift variant instead: https://coreos.github.io/butane/upgrading-openshift/")
 
 	// resources and trees
-	ErrTooManyResourceSources = errors.New("only one of the following can be set: inline, local, source")
+	ErrTooManyResourceSources = errors.New("only one resource content source can be set")
 	ErrFilesDirEscape         = errors.New("local file path traverses outside the files directory")
 	ErrFileType               = errors.New("trees may only contain files, directories, and symlinks")
 	ErrNodeExists             = errors.New("matching filesystem node has existing contents or different type")

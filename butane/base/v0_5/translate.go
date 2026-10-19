@@ -143,7 +143,7 @@ func translateResource(from Resource, options common.TranslateOptions) (to types
 
 	if from.Local != nil {
 		c := path.New("yaml", "local")
-		contents, err := baseutil.ReadLocalFile(*from.Local, options.FilesDir)
+		contents, err := baseutil.ReadLocalFile(*from.Local, options)
 		if err != nil {
 			r.AddOnError(c, err)
 			return
@@ -185,7 +185,73 @@ func translateResource(from Resource, options common.TranslateOptions) (to types
 			tm.AddTranslation(c, path.New("json", "compression"))
 		}
 	}
+
+	if from.LocalButane != nil {
+		c := path.New("yaml", "local_butane")
+		if from.LocalButane.Path == nil {
+			r.AddOnError(c.Append("path"), fmt.Errorf("path is required"))
+			return
+		}
+		if from.LocalButane.FilesDir != nil && *from.LocalButane.FilesDir == "" {
+			r.AddOnError(c.Append("files_dir"), fmt.Errorf("files_dir cannot be empty"))
+			return
+		}
+
+		importPath := filepath.Join(options.SourceDir, filepath.FromSlash(*from.LocalButane.Path))
+		contents, err := baseutil.ReadFile(importPath, options.LocalFileReader)
+		if err != nil {
+			r.AddOnError(c, err)
+			return
+		}
+
+		childOptions := options
+		childOptions.SourceDir = filepath.Dir(importPath)
+		childOptions.FilesDir = childOptions.SourceDir
+		if from.LocalButane.FilesDir != nil {
+			childOptions.FilesDir = filepath.Join(childOptions.SourceDir, filepath.FromSlash(*from.LocalButane.FilesDir))
+		}
+		translateButaneResource(contents, childOptions, c, &r, &to, &tm)
+	}
+
+	if from.InlineButane != nil {
+		c := path.New("yaml", "inline_butane")
+		translateButaneResource([]byte(*from.InlineButane), options, c, &r, &to, &tm)
+	}
 	return
+}
+
+func translateButaneResource(butaneContents []byte, options common.TranslateOptions, c path.ContextPath, r *report.Report, to *types.Resource, tm *translate.TranslationSet) {
+	contents, rp, err := common.TranslateBytes(butaneContents, common.TranslateBytesOptions{
+		Pretty:           false,
+		Raw:              true,
+		TranslateOptions: options,
+	})
+	r.Merge(rp)
+	if err != nil {
+		r.AddOnError(c, err)
+		return
+	}
+
+	// Validate imported Ignition configs at the same points as regular resources.
+	if strings.HasPrefix(c.String(), "$.ignition.config") {
+		rp, err := ValidateIgnitionConfig(c, contents)
+		r.Merge(rp)
+		if err != nil {
+			return
+		}
+	}
+
+	src, compression, err := baseutil.MakeDataURL(contents, to.Compression, !options.NoResourceAutoCompression)
+	if err != nil {
+		r.AddOnError(c, err)
+		return
+	}
+	to.Source = &src
+	tm.AddTranslation(c, path.New("json", "source"))
+	if compression != nil {
+		to.Compression = compression
+		tm.AddTranslation(c, path.New("json", "compression"))
+	}
 }
 
 func translateDirectory(from Directory, options common.TranslateOptions) (to types.Directory, tm translate.TranslationSet, r report.Report) {
@@ -236,7 +302,7 @@ func translatePasswdUser(from PasswdUser, options common.TranslateOptions) (to t
 		}
 
 		for keyFileIndex, sshKeyFile := range from.SSHAuthorizedKeysLocal {
-			sshKeys, err := baseutil.ReadLocalFile(sshKeyFile, options.FilesDir)
+			sshKeys, err := baseutil.ReadLocalFile(sshKeyFile, options)
 			if err != nil {
 				r.AddOnError(c.Append(keyFileIndex), err)
 				continue
@@ -265,7 +331,7 @@ func translateUnit(from Unit, options common.TranslateOptions) (to types.Unit, t
 
 	if util.NotEmpty(from.ContentsLocal) {
 		c := path.New("yaml", "contents_local")
-		contents, err := baseutil.ReadLocalFile(*from.ContentsLocal, options.FilesDir)
+		contents, err := baseutil.ReadLocalFile(*from.ContentsLocal, options)
 		if err != nil {
 			r.AddOnError(c, err)
 			return
@@ -284,7 +350,7 @@ func translateDropin(from Dropin, options common.TranslateOptions) (to types.Dro
 
 	if util.NotEmpty(from.ContentsLocal) {
 		c := path.New("yaml", "contents_local")
-		contents, err := baseutil.ReadLocalFile(*from.ContentsLocal, options.FilesDir)
+		contents, err := baseutil.ReadLocalFile(*from.ContentsLocal, options)
 		if err != nil {
 			r.AddOnError(c, err)
 			return
@@ -377,7 +443,7 @@ func walkTree(yamlPath path.ContextPath, ts *translate.TranslationSet, r *report
 					ts.AddTranslation(yamlPath, path.New("json", "storage", "files"))
 				}
 			}
-			contents, err := os.ReadFile(srcPath)
+			contents, err := baseutil.ReadFile(srcPath, options.LocalFileReader)
 			if err != nil {
 				r.AddOnError(yamlPath, err)
 				return nil

@@ -204,12 +204,19 @@ type Raid struct {
 }
 
 type Resource struct {
-	Compression  *string      `yaml:"compression"`
-	HTTPHeaders  HTTPHeaders  `yaml:"http_headers"`
-	Source       *string      `yaml:"source"`
-	Inline       *string      `yaml:"inline"` // Added, not in ignition spec
-	Local        *string      `yaml:"local"`  // Added, not in ignition spec
-	Verification Verification `yaml:"verification"`
+	Compression  *string       `yaml:"compression"`
+	HTTPHeaders  HTTPHeaders   `yaml:"http_headers"`
+	Source       *string       `yaml:"source"`
+	Inline       *string       `yaml:"inline"` // Added, not in ignition spec
+	Local        *string       `yaml:"local"`  // Added, not in ignition spec
+	Verification Verification  `yaml:"verification"`
+	InlineButane *string       `yaml:"inline_butane"` // Added, not in ignition spec
+	LocalButane  *ImportButane `yaml:"local_butane"`  // Added, not in ignition spec
+}
+
+type ImportButane struct {
+	Path     *string `yaml:"path"`
+	FilesDir *string `yaml:"files_dir"`
 }
 
 type SSHAuthorizedKey string

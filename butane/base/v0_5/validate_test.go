@@ -139,6 +139,54 @@ func TestValidateResource(t *testing.T) {
 	}
 }
 
+func TestValidateResourceButaneImports(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		in      Resource
+		message string
+		path    path.ContextPath
+	}{
+		{
+			name: "inline import",
+			in:   Resource{InlineButane: util.StrToPtr("variant: fcos\nversion: 1.7.0\n")},
+		},
+		{
+			name: "local import",
+			in:   Resource{LocalButane: &ImportButane{Path: util.StrToPtr("child.bu")}},
+		},
+		{
+			name:    "local import requires path",
+			in:      Resource{LocalButane: &ImportButane{}},
+			message: "path is required",
+			path:    path.New("yaml", "local_butane", "path"),
+		},
+		{
+			name:    "local import files_dir cannot be empty",
+			in:      Resource{LocalButane: &ImportButane{Path: util.StrToPtr("child.bu"), FilesDir: util.StrToPtr("")}},
+			message: "files_dir cannot be empty",
+			path:    path.New("yaml", "local_butane", "files_dir"),
+		},
+		{
+			name:    "import sources are exclusive",
+			in:      Resource{InlineButane: util.StrToPtr("variant: fcos\nversion: 1.7.0\n"), LocalButane: &ImportButane{Path: util.StrToPtr("child.bu")}},
+			message: common.ErrTooManyResourceSources.Error(),
+			path:    path.New("yaml", "local_butane"),
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			actual := test.in.Validate(path.New("yaml"))
+			baseutil.VerifyReport(t, test.in, actual)
+			if test.message == "" {
+				assert.Empty(t, actual.Entries)
+				return
+			}
+			assert.Len(t, actual.Entries, 1)
+			assert.Equal(t, test.path, actual.Entries[0].Context)
+			assert.Equal(t, test.message, actual.Entries[0].Message)
+		})
+	}
+}
+
 func TestValidateTree(t *testing.T) {
 	tests := []struct {
 		in  Tree

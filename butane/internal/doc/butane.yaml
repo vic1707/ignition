@@ -27,6 +27,18 @@ resource:
     - name: local
       after: source
       desc: "a local path to the contents of the %TYPE%, relative to the directory specified by the `--files-dir` command-line argument. Mutually exclusive with `source` and `inline`."
+    - name: inline_butane
+      after: source
+      desc: "an inline Butane config to translate and embed as Ignition JSON. Its variant and version must match the containing config. Mutually exclusive with `source`, `inline`, `local`, and `local_butane`. Experimental fork extension."
+    - name: local_butane
+      after: source
+      desc: "a Butane config to translate and embed as Ignition JSON. Its variant and version must match the containing config. Mutually exclusive with `source`, `inline`, `local`, and `inline_butane`. Experimental fork extension."
+      children:
+        - name: path
+          required: true
+          desc: "the path to the imported Butane config, relative to the containing Butane file's directory, independently of `--files-dir`. For stdin, relative to the working directory."
+        - name: files_dir
+          desc: "the imported config's directory for ordinary local resource references, relative to the imported file's directory. Defaults to the imported file's directory when omitted. Nested Butane import paths always follow their own source files."
 
 mode:
   # File mode transforms.

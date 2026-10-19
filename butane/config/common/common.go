@@ -15,9 +15,13 @@
 package common
 
 type TranslateOptions struct {
-	FilesDir                  string // allow embedding local files relative to this directory
-	NoResourceAutoCompression bool   // skip automatic compression of inline/local resources
-	DebugPrintTranslations    bool   // report translations to stderr
+	FilesDir                  string                       // allow embedding local files relative to this directory
+	SourceDir                 string                       // directory containing the current Butane config
+	LocalFileReader           func(string) ([]byte, error) // read local files; nil uses os.ReadFile
+	NoResourceAutoCompression bool                         // skip automatic compression of inline/local resources
+	DebugPrintTranslations    bool                         // report translations to stderr
+	parentVariant             string
+	parentVersion             string
 }
 
 type TranslateBytesOptions struct {

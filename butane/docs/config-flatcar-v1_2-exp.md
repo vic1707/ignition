@@ -22,6 +22,10 @@ The Flatcar configuration is a YAML document conforming to the following specifi
       * **_source_** (string): the URL of the config. Supported schemes are `http`, `https`, `tftp`, `s3`, `arn`, `gs`, and [`data`](https://tools.ietf.org/html/rfc2397). When using `http`, it is advisable to use the verification option to ensure the contents haven't been modified. Mutually exclusive with `inline` and `local`.
       * **_inline_** (string): the contents of the config. Mutually exclusive with `source` and `local`.
       * **_local_** (string): a local path to the contents of the config, relative to the directory specified by the `--files-dir` command-line argument. Mutually exclusive with `source` and `inline`.
+      * **_inline_butane_** (string): an inline Butane config to translate and embed as Ignition JSON. Its variant and version must match the containing config. Mutually exclusive with `source`, `inline`, `local`, and `local_butane`. Experimental fork extension.
+      * **_local_butane_** (object): a Butane config to translate and embed as Ignition JSON. Its variant and version must match the containing config. Mutually exclusive with `source`, `inline`, `local`, and `inline_butane`. Experimental fork extension.
+        * **path** (string): the path to the imported Butane config, relative to the containing Butane file's directory, independently of `--files-dir`. For stdin, relative to the working directory.
+        * **_files_dir_** (string): the imported config's directory for ordinary local resource references, relative to the imported file's directory. Defaults to the imported file's directory when omitted. Nested Butane import paths always follow their own source files.
       * **_compression_** (string): the type of compression used on the config (null or gzip). Compression cannot be used with S3.
       * **_http_headers_** (list of objects): a list of HTTP headers to be added to the request. Available for `http` and `https` source schemes only.
         * **name** (string): the header name.
@@ -32,6 +36,10 @@ The Flatcar configuration is a YAML document conforming to the following specifi
       * **_source_** (string): the URL of the config. Supported schemes are `http`, `https`, `tftp`, `s3`, `arn`, `gs`, and [`data`](https://tools.ietf.org/html/rfc2397). When using `http`, it is advisable to use the verification option to ensure the contents haven't been modified. Mutually exclusive with `inline` and `local`.
       * **_inline_** (string): the contents of the config. Mutually exclusive with `source` and `local`.
       * **_local_** (string): a local path to the contents of the config, relative to the directory specified by the `--files-dir` command-line argument. Mutually exclusive with `source` and `inline`.
+      * **_inline_butane_** (string): an inline Butane config to translate and embed as Ignition JSON. Its variant and version must match the containing config. Mutually exclusive with `source`, `inline`, `local`, and `local_butane`. Experimental fork extension.
+      * **_local_butane_** (object): a Butane config to translate and embed as Ignition JSON. Its variant and version must match the containing config. Mutually exclusive with `source`, `inline`, `local`, and `inline_butane`. Experimental fork extension.
+        * **path** (string): the path to the imported Butane config, relative to the containing Butane file's directory, independently of `--files-dir`. For stdin, relative to the working directory.
+        * **_files_dir_** (string): the imported config's directory for ordinary local resource references, relative to the imported file's directory. Defaults to the imported file's directory when omitted. Nested Butane import paths always follow their own source files.
       * **_compression_** (string): the type of compression used on the config (null or gzip). Compression cannot be used with S3.
       * **_http_headers_** (list of objects): a list of HTTP headers to be added to the request. Available for `http` and `https` source schemes only.
         * **name** (string): the header name.
@@ -47,6 +55,10 @@ The Flatcar configuration is a YAML document conforming to the following specifi
         * **_source_** (string): the URL of the certificate bundle (in PEM format). The bundle can contain multiple concatenated certificates. Supported schemes are `http`, `https`, `tftp`, `s3`, `arn`, `gs`, and [`data`](https://tools.ietf.org/html/rfc2397). When using `http`, it is advisable to use the verification option to ensure the contents haven't been modified. Mutually exclusive with `inline` and `local`.
         * **_inline_** (string): the contents of the certificate bundle (in PEM format). The bundle can contain multiple concatenated certificates. Mutually exclusive with `source` and `local`.
         * **_local_** (string): a local path to the contents of the certificate bundle (in PEM format), relative to the directory specified by the `--files-dir` command-line argument. The bundle can contain multiple concatenated certificates. Mutually exclusive with `source` and `inline`.
+        * **_inline_butane_** (string): an inline Butane config to translate and embed as Ignition JSON. Its variant and version must match the containing config. Mutually exclusive with `source`, `inline`, `local`, and `local_butane`. Experimental fork extension.
+        * **_local_butane_** (object): a Butane config to translate and embed as Ignition JSON. Its variant and version must match the containing config. Mutually exclusive with `source`, `inline`, `local`, and `inline_butane`. Experimental fork extension.
+          * **path** (string): the path to the imported Butane config, relative to the containing Butane file's directory, independently of `--files-dir`. For stdin, relative to the working directory.
+          * **_files_dir_** (string): the imported config's directory for ordinary local resource references, relative to the imported file's directory. Defaults to the imported file's directory when omitted. Nested Butane import paths always follow their own source files.
         * **_compression_** (string): the type of compression used on the certificate bundle (null or gzip). Compression cannot be used with S3.
         * **_http_headers_** (list of objects): a list of HTTP headers to be added to the request. Available for `http` and `https` source schemes only.
           * **name** (string): the header name.
@@ -78,8 +90,8 @@ The Flatcar configuration is a YAML document conforming to the following specifi
     * **_spares_** (integer): the number of spares (if applicable) in the array.
     * **_options_** (list of strings): any additional options to be passed to mdadm.
   * **_filesystems_** (list of objects): the list of filesystems to be configured. `device` and `format` need to be specified. Every filesystem must have a unique `device`.
-    * **device** (string): the absolute path to the device. Devices are typically referenced by the `/dev/disk/by-*` symlinks.
-    * **format** (string): the filesystem format (ext4, btrfs, xfs, vfat, swap, or none).
+    * **device** (string): the absolute path to the device. Devices are typically referenced by the `/dev/disk/by-*` symlinks. For virtiofs, this is the tag name.
+    * **format** (string): the filesystem format (ext4, btrfs, xfs, vfat, virtiofs, swap, or none).
     * **_path_** (string): the mount-point of the filesystem while Ignition is running relative to where the root filesystem will be mounted. This is not necessarily the same as where it should be mounted in the real root, but it is encouraged to make it the same.
     * **_wipe_filesystem_** (boolean): whether or not to wipe the device before filesystem creation, see [Ignition's documentation on filesystems](https://coreos.github.io/ignition/operator-notes/#filesystem-reuse-semantics) for more information. Defaults to false.
     * **_label_** (string): the label of the filesystem.
@@ -94,6 +106,10 @@ The Flatcar configuration is a YAML document conforming to the following specifi
       * **_source_** (string): the URL of the file. Supported schemes are `http`, `https`, `tftp`, `s3`, `arn`, `gs`, and [`data`](https://tools.ietf.org/html/rfc2397). When using `http`, it is advisable to use the verification option to ensure the contents haven't been modified. If source is omitted and a regular file already exists at the path, Ignition will do nothing. If source is omitted and no file exists, an empty file will be created. Mutually exclusive with `inline` and `local`.
       * **_inline_** (string): the contents of the file. Mutually exclusive with `source` and `local`.
       * **_local_** (string): a local path to the contents of the file, relative to the directory specified by the `--files-dir` command-line argument. Mutually exclusive with `source` and `inline`.
+      * **_inline_butane_** (string): an inline Butane config to translate and embed as Ignition JSON. Its variant and version must match the containing config. Mutually exclusive with `source`, `inline`, `local`, and `local_butane`. Experimental fork extension.
+      * **_local_butane_** (object): a Butane config to translate and embed as Ignition JSON. Its variant and version must match the containing config. Mutually exclusive with `source`, `inline`, `local`, and `inline_butane`. Experimental fork extension.
+        * **path** (string): the path to the imported Butane config, relative to the containing Butane file's directory, independently of `--files-dir`. For stdin, relative to the working directory.
+        * **_files_dir_** (string): the imported config's directory for ordinary local resource references, relative to the imported file's directory. Defaults to the imported file's directory when omitted. Nested Butane import paths always follow their own source files.
       * **_compression_** (string): the type of compression used on the file (null or gzip). Compression cannot be used with S3.
       * **_http_headers_** (list of objects): a list of HTTP headers to be added to the request. Available for `http` and `https` source schemes only.
         * **name** (string): the header name.
@@ -104,6 +120,10 @@ The Flatcar configuration is a YAML document conforming to the following specifi
       * **_source_** (string): the URL of the fragment. Supported schemes are `http`, `https`, `tftp`, `s3`, `arn`, `gs`, and [`data`](https://tools.ietf.org/html/rfc2397). When using `http`, it is advisable to use the verification option to ensure the contents haven't been modified. Mutually exclusive with `inline` and `local`.
       * **_inline_** (string): the contents of the fragment. Mutually exclusive with `source` and `local`.
       * **_local_** (string): a local path to the contents of the fragment, relative to the directory specified by the `--files-dir` command-line argument. Mutually exclusive with `source` and `inline`.
+      * **_inline_butane_** (string): an inline Butane config to translate and embed as Ignition JSON. Its variant and version must match the containing config. Mutually exclusive with `source`, `inline`, `local`, and `local_butane`. Experimental fork extension.
+      * **_local_butane_** (object): a Butane config to translate and embed as Ignition JSON. Its variant and version must match the containing config. Mutually exclusive with `source`, `inline`, `local`, and `inline_butane`. Experimental fork extension.
+        * **path** (string): the path to the imported Butane config, relative to the containing Butane file's directory, independently of `--files-dir`. For stdin, relative to the working directory.
+        * **_files_dir_** (string): the imported config's directory for ordinary local resource references, relative to the imported file's directory. Defaults to the imported file's directory when omitted. Nested Butane import paths always follow their own source files.
       * **_compression_** (string): the type of compression used on the fragment (null or gzip). Compression cannot be used with S3.
       * **_http_headers_** (list of objects): a list of HTTP headers to be added to the request. Available for `http` and `https` source schemes only.
         * **name** (string): the header name.
@@ -145,6 +165,10 @@ The Flatcar configuration is a YAML document conforming to the following specifi
       * **_source_** (string): the URL of the key file. Supported schemes are `http`, `https`, `tftp`, `s3`, `arn`, `gs`, and [`data`](https://tools.ietf.org/html/rfc2397). When using `http`, it is advisable to use the verification option to ensure the contents haven't been modified. Mutually exclusive with `inline` and `local`.
       * **_inline_** (string): the contents of the key file. Mutually exclusive with `source` and `local`.
       * **_local_** (string): a local path to the contents of the key file, relative to the directory specified by the `--files-dir` command-line argument. Mutually exclusive with `source` and `inline`.
+      * **_inline_butane_** (string): an inline Butane config to translate and embed as Ignition JSON. Its variant and version must match the containing config. Mutually exclusive with `source`, `inline`, `local`, and `local_butane`. Experimental fork extension.
+      * **_local_butane_** (object): a Butane config to translate and embed as Ignition JSON. Its variant and version must match the containing config. Mutually exclusive with `source`, `inline`, `local`, and `inline_butane`. Experimental fork extension.
+        * **path** (string): the path to the imported Butane config, relative to the containing Butane file's directory, independently of `--files-dir`. For stdin, relative to the working directory.
+        * **_files_dir_** (string): the imported config's directory for ordinary local resource references, relative to the imported file's directory. Defaults to the imported file's directory when omitted. Nested Butane import paths always follow their own source files.
       * **_compression_** (string): the type of compression used on the key file (null or gzip). Compression cannot be used with S3.
       * **_http_headers_** (list of objects): a list of HTTP headers to be added to the request. Available for `http` and `https` source schemes only.
         * **name** (string): the header name.
